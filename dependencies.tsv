@@ -1,0 +1,7 @@
+github.com/coreos/etcd	git	fa71bec550c50e1cde11a270bcf555e6a6f5d151	2016-02-09T05:16:28Z
+github.com/juju/loggo	git	8477fc936adf0e382d680310047ca27e128a309a	2015-05-27T03:58:39Z
+github.com/juju/testing	git	321edad6b2d1ccac4af9ee05c25b8ad734d40546	2016-02-03T23:31:10Z
+golang.org/x/net	git	ea47fc708ee3e20177f3ca3716217c4ab75942cb	2015-08-29T23:03:18Z
+gopkg.in/check.v1	git	b3d3430320d4260e5fea99841af984b3badcea63	2015-06-26T10:50:28Z
+gopkg.in/errgo.v1	git	66cb46252b94c1f3d65646f54ee8043ab38d766c	2015-10-07T15:31:57Z
+gopkg.in/yaml.v2	git	53feefa2559fb8dfa8d81baad31be332c97d6c77	2015-09-24T14:23:14Z
