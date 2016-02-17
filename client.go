@@ -15,21 +15,13 @@ import (
 type ServiceType string
 
 const (
-	// The name type for charms.
-	Charms ServiceType = "charms"
-	// The name type for models.
+	// The name type for charm.
+	Charm ServiceType = "charm"
+	// The name type for model.
 	Model ServiceType = "model"
-	// The name type for pages.
-	Pages ServiceType = "pages"
+	// The name type for page.
+	Page ServiceType = "page"
 )
-
-// ServiceTypeMap is a convenience map for finding a ServiceType
-// from a string.
-var ServiceTypeMap map[string]ServiceType = map[string]ServiceType{
-	string(Charms): Charms,
-	string(Model):  Model,
-	string(Pages):  Pages,
-}
 
 // Client is a naming service client.
 type Client struct {
@@ -58,7 +50,7 @@ func NewClient(addr ...string) (*Client, error) {
 func (c *Client) Create(name string, value ServiceType) error {
 	_, err := c.kapi.Create(c.context, name, string(value))
 	if err != nil && err.(client.Error).Code == client.ErrorCodeNodeExist {
-		return errgo.Newf("key exists %s", name)
+		return errgo.Newf("key '%s' exists", name)
 	}
 	return err
 }
@@ -71,7 +63,7 @@ func (c *Client) Update(name string, oldServiceType, newServiceType ServiceType)
 	}
 	_, err := c.kapi.Set(c.context, name, string(newServiceType), sopt)
 	if err != nil && err.(client.Error).Code == client.ErrorCodeKeyNotFound {
-		return errgo.Newf("key does not exist %s", name)
+		return errgo.Newf("key '%s' does not exist", name)
 	}
 	return err
 }
@@ -81,12 +73,12 @@ func (c *Client) Read(name string) (*ServiceType, error) {
 	quorum := &client.GetOptions{Quorum: true}
 	response, err := c.kapi.Get(c.context, name, quorum)
 	if err != nil && err.(client.Error).Code == client.ErrorCodeKeyNotFound {
-		return nil, errgo.Newf("key does not exist %s", name)
+		return nil, errgo.Newf("key '%s' does not exist", name)
 	} else if err != nil {
 		return nil, err
 	}
 	if response.Node.Dir {
-		return nil, errgo.Newf("cannot read directory %s", name)
+		return nil, errgo.Newf("cannot read directory '%s'", name)
 	}
 
 	value := response.Node.Value
@@ -99,8 +91,10 @@ func (c *Client) Read(name string) (*ServiceType, error) {
 // CAUTION, THIS RECURSES DIRECTORIES!
 func (c *Client) Delete(name string) error {
 	_, err := c.kapi.Delete(c.context, name, nil)
-	if err != nil {
-		return errgo.Notef(err, "key does not exist %s", name)
+	if err != nil && err.(client.Error).Code == client.ErrorCodeKeyNotFound {
+		return errgo.Newf("key '%s' does not exist", name)
+	} else if err != nil {
+		return err
 	}
 	return nil
 }
@@ -108,11 +102,13 @@ func (c *Client) Delete(name string) error {
 // List lists returns a map of string to service type.
 func (c *Client) List(namespace string) (map[string]ServiceType, error) {
 	response, err := c.kapi.Get(c.context, namespace, nil)
-	if err != nil {
+	if err != nil && err.(client.Error).Code == client.ErrorCodeKeyNotFound {
+		return nil, errgo.Newf("key '%s' does not exist", namespace)
+	} else if err != nil {
 		return nil, err
 	}
 	if !response.Node.Dir {
-		return nil, errgo.Newf("not a directory %s", namespace)
+		return nil, errgo.Newf("'%s' is not a directory", namespace)
 	}
 	nodes := response.Node.Nodes
 	results := make(map[string]ServiceType, len(nodes))

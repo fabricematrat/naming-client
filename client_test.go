@@ -7,9 +7,7 @@ import (
 	"testing"
 
 	"github.com/coreos/etcd/integration"
-
 	"github.com/CanonicalLtd/naming-client"
-
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 )
@@ -29,7 +27,7 @@ func (s *suite) SetUpTest(c *gc.C) {
 	s.addr = []string{cluster.URL(0)}
 }
 
-func (s *suite) TestCreateAndRead(c *gc.C) {
+func (s *suite) TestCreateAndReadModel(c *gc.C) {
 	client, err := namingclient.NewClient(s.addr...)
 	c.Assert(err, gc.IsNil)
 	err = client.Create("foo", namingclient.Model)
@@ -37,6 +35,26 @@ func (s *suite) TestCreateAndRead(c *gc.C) {
 	value, err := client.Read("foo")
 	c.Assert(err, gc.IsNil)
 	c.Assert(*value, gc.Equals, namingclient.Model)
+}
+
+func (s *suite) TestCreateAndReadCharm(c *gc.C) {
+	client, err := namingclient.NewClient(s.addr...)
+	c.Assert(err, gc.IsNil)
+	err = client.Create("foo", namingclient.Charm)
+	c.Assert(err, gc.IsNil)
+	value, err := client.Read("foo")
+	c.Assert(err, gc.IsNil)
+	c.Assert(*value, gc.Equals, namingclient.Charm)
+}
+
+func (s *suite) TestCreateAndReadPage(c *gc.C) {
+	client, err := namingclient.NewClient(s.addr...)
+	c.Assert(err, gc.IsNil)
+	err = client.Create("foo", namingclient.Page)
+	c.Assert(err, gc.IsNil)
+	value, err := client.Read("foo")
+	c.Assert(err, gc.IsNil)
+	c.Assert(*value, gc.Equals, namingclient.Page)
 }
 
 func (s *suite) TestDelete(c *gc.C) {
@@ -47,15 +65,22 @@ func (s *suite) TestDelete(c *gc.C) {
 	err = client.Delete("foo")
 	c.Assert(err, gc.IsNil)
 	value, err := client.Read("foo")
-	c.Assert(err, gc.ErrorMatches, "key does not exist foo")
+	c.Assert(err, gc.ErrorMatches, "key 'foo' does not exist")
 	c.Assert(value, gc.IsNil)
+}
+
+func (s *suite) TestDeleteUnknownKey(c *gc.C) {
+	client, err := namingclient.NewClient(s.addr...)
+	c.Assert(err, gc.IsNil)
+	err = client.Delete("foo")
+	c.Assert(err, gc.ErrorMatches, "key 'foo' does not exist")
 }
 
 func (s *suite) TestReadUnknownKey(c *gc.C) {
 	client, err := namingclient.NewClient(s.addr...)
 	c.Assert(err, gc.IsNil)
 	value, err := client.Read("nope")
-	c.Assert(err, gc.ErrorMatches, "key does not exist nope")
+	c.Assert(err, gc.ErrorMatches, "key 'nope' does not exist")
 	c.Assert(value, gc.IsNil)
 }
 
@@ -65,7 +90,7 @@ func (s *suite) TestCreateExistingFails(c *gc.C) {
 	err = client.Create("foo", namingclient.Model)
 	c.Assert(err, gc.IsNil)
 	err = client.Create("foo", namingclient.Model)
-	c.Assert(err, gc.ErrorMatches, "key exists foo")
+	c.Assert(err, gc.ErrorMatches, "key 'foo' exists")
 }
 
 func (s *suite) TestReadDirectoryShouldFail(c *gc.C) {
@@ -74,7 +99,7 @@ func (s *suite) TestReadDirectoryShouldFail(c *gc.C) {
 	err = client.Create("mydir/foo", namingclient.Model)
 	c.Assert(err, gc.IsNil)
 	value, err := client.Read("mydir")
-	c.Assert(err, gc.ErrorMatches, "cannot read directory mydir")
+	c.Assert(err, gc.ErrorMatches, "cannot read directory 'mydir'")
 	c.Assert(value, gc.IsNil)
 }
 
@@ -83,17 +108,17 @@ func (s *suite) TestUpdate(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	err = client.Create("foo", namingclient.Model)
 	c.Assert(err, gc.IsNil)
-	err = client.Update("foo", namingclient.Model, namingclient.Charms)
+	err = client.Update("foo", namingclient.Model, namingclient.Charm)
 	value, err := client.Read("foo")
 	c.Assert(err, gc.IsNil)
-	c.Assert(*value, gc.Equals, namingclient.Charms)
+	c.Assert(*value, gc.Equals, namingclient.Charm)
 }
 
 func (s *suite) TestUpdateNoKey(c *gc.C) {
 	client, err := namingclient.NewClient(s.addr...)
 	c.Assert(err, gc.IsNil)
-	err = client.Update("foo", namingclient.Model, namingclient.Charms)
-	c.Assert(err, gc.ErrorMatches, "key does not exist foo")
+	err = client.Update("foo", namingclient.Model, namingclient.Charm)
+	c.Assert(err, gc.ErrorMatches, "key 'foo' does not exist")
 }
 
 func (s *suite) TestCreateAndListDirectory(c *gc.C) {
@@ -117,6 +142,14 @@ func (s *suite) TestListNonDirectoryFails(c *gc.C) {
 	err = client.Create("foo", namingclient.Model)
 	c.Assert(err, gc.IsNil)
 	value, err := client.List("foo")
-	c.Assert(err, gc.ErrorMatches, "not a directory foo")
+	c.Assert(err, gc.ErrorMatches, "'foo' is not a directory")
+	c.Assert(value, gc.IsNil)
+}
+
+func (s *suite) TestListUnknownDirectory(c *gc.C) {
+	client, err := namingclient.NewClient(s.addr...)
+	c.Assert(err, gc.IsNil)
+	value, err := client.List("foo")
+	c.Assert(err, gc.ErrorMatches, "key 'foo' does not exist")
 	c.Assert(value, gc.IsNil)
 }
